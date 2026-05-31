@@ -82,7 +82,13 @@ jobs:
 
       - name: Build and push with docker buildx
         run: |
-          docker buildx create --use --driver docker-container --driver-opt "network=host" --buildkitd-flags '--allow-insecure-entitlement network.host'
+          mkdir -p /etc/buildkit
+          cat > /etc/buildkit/buildkitd.toml <<EOF
+          [registry."${{ env.ip }}:5000"]
+            http = true
+            insecure = true
+          EOF
+          docker buildx create --use --driver docker-container --driver-opt "network=host" --buildkitd-flags '--allow-insecure-entitlement network.host' --buildkitd-config /etc/buildkit/buildkitd.toml
           docker buildx build \
             --tag ${{ env.ip }}:5000/registry-example:${{ github.run_number }}-buildx \
             --push \
