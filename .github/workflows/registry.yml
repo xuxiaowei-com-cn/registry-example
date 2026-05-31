@@ -82,7 +82,7 @@ jobs:
 
       - name: Build and push with docker buildx
         run: |
-          docker buildx create --use
+          docker buildx create --use --driver docker-container --driver-opt "network=host" --buildkitd-flags '--allow-insecure-entitlement network.host'
           docker buildx build \
             --tag ${{ env.ip }}:5000/registry-example:${{ github.run_number }}-buildx \
             --push \
