@@ -60,12 +60,25 @@ jobs:
         run: |
           ip=$(getent hosts registry | awk '{print $1}')
           echo "ip=$ip"
-          echo "ip=$ip" > $GITHUB_ENV
+          echo "ip=$ip" >> $GITHUB_ENV
+
+      - name: Allow insecure Docker registry
+        run: |
+          docker info
+          docker run --rm --privileged --pid=host \
+            -v /etc/docker:/etc/docker \
+            alpine:3.22 \
+            sh -c "
+              mkdir -p /etc/docker
+              echo '{\"insecure-registries\":[\"${{ env.ip }}:5000\"]}' > /etc/docker/daemon.json
+              kill -HUP \$(pgrep dockerd) 2>/dev/null || true
+            "
+          docker info
 
       - name: Build and push to local registry
         run: |
-          docker build -t $ip:5000/registry-example:${{ github.run_number }} .
-          docker push $ip:5000/registry-example:${{ github.run_number }}
+          docker build -t ${{ env.ip }}:5000/registry-example:${{ github.run_number }} .
+          docker push ${{ env.ip }}:5000/registry-example:${{ github.run_number }}
 
       - name: Verify image
-        run: docker pull $ip:5000/registry-example:${{ github.run_number }}
+        run: docker pull ${{ env.ip }}:5000/registry-example:${{ github.run_number }}
