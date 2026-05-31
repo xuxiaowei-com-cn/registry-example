@@ -45,10 +45,27 @@ jobs:
           echo "DOCKER_HOST=$DOCKER_HOST"
           docker info
 
+      - name: Check registry hostname IP
+        run: |
+          echo "=== getent hosts registry ==="
+          getent hosts registry || echo "getent not available"
+          echo "=== nslookup registry ==="
+          nslookup registry 2>/dev/null || echo "nslookup not available"
+          echo "=== ping registry ==="
+          ping -c 1 registry 2>/dev/null || echo "ping not available"
+          echo "=== /etc/hosts ==="
+          cat /etc/hosts
+
+      - name: Resolve host IP
+        run: |
+          ip=$(getent hosts registry | awk '{print $1}')
+          echo "ip=$ip"
+          echo "ip=$ip" > $GITHUB_ENV
+
       - name: Build and push to local registry
         run: |
-          docker build -t 127.0.0.1:5000/registry-example:${{ github.run_number }} .
-          docker push 127.0.0.1:5000/registry-example:${{ github.run_number }}
+          docker build -t $ip:5000/registry-example:${{ github.run_number }} .
+          docker push $ip:5000/registry-example:${{ github.run_number }}
 
       - name: Verify image
-        run: docker pull 127.0.0.1:5000/registry-example:${{ github.run_number }}
+        run: docker pull $ip:5000/registry-example:${{ github.run_number }}
