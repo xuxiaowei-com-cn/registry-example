@@ -70,29 +70,29 @@ jobs:
             alpine:3.22 \
             sh -c "
               mkdir -p /etc/docker
-              echo '{\"insecure-registries\":[\"${{ env.ip }}:5000\"]}' > /etc/docker/daemon.json
+              echo '{\"insecure-registries\":[\"registry:5000\"]}' > /etc/docker/daemon.json
               kill -HUP \$(pgrep dockerd) 2>/dev/null || true
             "
           docker info
 
       - name: Build and push to local registry
         run: |
-          docker build -t ${{ env.ip }}:5000/registry-example:${{ github.run_number }} .
-          docker push ${{ env.ip }}:5000/registry-example:${{ github.run_number }}
+          docker build -t registry:5000/registry-example:${{ github.run_number }} .
+          docker push registry:5000/registry-example:${{ github.run_number }}
 
       - name: Build and push with docker buildx
         run: |
           mkdir -p /etc/buildkit
           cat > /etc/buildkit/buildkitd.toml <<EOF
-          [registry."${{ env.ip }}:5000"]
+          [registry."registry:5000"]
             http = true
             insecure = true
           EOF
           docker buildx create --use --driver docker-container --driver-opt "network=host" --buildkitd-flags '--allow-insecure-entitlement network.host' --buildkitd-config /etc/buildkit/buildkitd.toml
           docker buildx build \
-            --tag ${{ env.ip }}:5000/registry-example:${{ github.run_number }}-buildx \
+            --tag registry:5000/registry-example:${{ github.run_number }}-buildx \
             --push \
             .
 
       - name: Verify image
-        run: docker pull ${{ env.ip }}:5000/registry-example:${{ github.run_number }}
+        run: docker pull registry:5000/registry-example:${{ github.run_number }}
